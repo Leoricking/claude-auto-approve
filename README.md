@@ -56,17 +56,17 @@ claude-auto-approve/
 C:\Users\<你的 Windows 帳號>\.claude\settings.json
 ```
 
-Rossi 的預設路徑為：
+xxx 的預設路徑為：
 
 ```text
-C:\Users\Rossi\.claude\settings.json
+C:\Users\xxx\.claude\settings.json
 ```
 
 PowerShell：
 
 ```powershell
-New-Item -ItemType Directory -Force "C:\Users\Rossi\.claude"
-Copy-Item -Force ".\settings.json" "C:\Users\Rossi\.claude\settings.json"
+New-Item -ItemType Directory -Force "C:\Users\xxx\.claude"
+Copy-Item -Force ".\settings.json" "C:\Users\xxx\.claude\settings.json"
 ```
 
 重新啟動 Claude Code 後，所有專案都會載入這份全域設定。
@@ -227,7 +227,7 @@ claude --dangerously-skip-permissions
 修改全域設定後，重新複製：
 
 ```powershell
-Copy-Item -Force ".\settings.json" "C:\Users\Rossi\.claude\settings.json"
+Copy-Item -Force ".\settings.json" "C:\Users\xxx\.claude\settings.json"
 ```
 
 然後重新啟動 Claude Code。
