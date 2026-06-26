@@ -1,54 +1,81 @@
-﻿$ErrorActionPreference = "Stop"
+﻿param(
+    [string]$CommitMessage = "feat: add reusable Claude permission template"
+)
 
-$RepoPath = "C:\Users\Rossi\Documents\Claude\claude-auto-approve"
-$CommitMessage = "docs: add setup and usage guide"
+$ErrorActionPreference = "Stop"
+$RepoPath = $PSScriptRoot
 
 Write-Host "============================================================"
 Write-Host "Claude Auto Approve - Git Commit and Push"
 Write-Host "Repository: $RepoPath"
+Write-Host "Commit: $CommitMessage"
 Write-Host "============================================================"
 
-if (-not (Test-Path -LiteralPath $RepoPath)) {
-    throw "Repository not found: $RepoPath"
+if ([string]::IsNullOrWhiteSpace($RepoPath) -or -not (Test-Path -LiteralPath $RepoPath)) {
+    throw "Unable to resolve repository path from script location."
 }
 
-Write-Host "`n[1/7] Git status"
+if (-not (Test-Path -LiteralPath (Join-Path $RepoPath ".git"))) {
+    throw "Not a Git repository: $RepoPath"
+}
+
+Write-Host "`n[1/8] Verify current branch and repository"
+git -C "$RepoPath" rev-parse --show-toplevel
+if ($LASTEXITCODE -ne 0) { throw "Git repository verification failed." }
+
+git -C "$RepoPath" branch --show-current
+if ($LASTEXITCODE -ne 0) { throw "Unable to read current branch." }
+
+Write-Host "`n[2/8] Git status before staging"
 git -C "$RepoPath" status
 if ($LASTEXITCODE -ne 0) { throw "git status failed." }
 
-Write-Host "`n[2/7] Add README.md"
-git -C "$RepoPath" add "README.md"
-if ($LASTEXITCODE -ne 0) { throw "git add README.md failed." }
+$FilesToStage = @(
+    "README.md",
+    "settings.json",
+    ".gitignore",
+    "git_commit_push.ps1"
+)
 
-if (Test-Path -LiteralPath (Join-Path $RepoPath "settings.json")) {
-    Write-Host "`n[3/7] Add settings.json"
-    git -C "$RepoPath" add "settings.json"
-    if ($LASTEXITCODE -ne 0) { throw "git add settings.json failed." }
-} else {
-    Write-Host "`n[3/7] settings.json not found; skipping."
+Write-Host "`n[3/8] Stage known repository files"
+foreach ($File in $FilesToStage) {
+    $FullPath = Join-Path $RepoPath $File
+    if (Test-Path -LiteralPath $FullPath) {
+        Write-Host "  Adding $File"
+        git -C "$RepoPath" add -- "$File"
+        if ($LASTEXITCODE -ne 0) { throw "git add failed for $File" }
+    } else {
+        Write-Host "  Skipping missing file: $File"
+    }
 }
 
-Write-Host "`n[4/7] Add git_commit_push.ps1"
-git -C "$RepoPath" add "git_commit_push.ps1"
-if ($LASTEXITCODE -ne 0) { throw "git add git_commit_push.ps1 failed." }
-
-Write-Host "`n[5/7] Review staged changes"
+Write-Host "`n[4/8] Review staged summary"
 git -C "$RepoPath" diff --cached --stat
-git -C "$RepoPath" diff --cached
-if ($LASTEXITCODE -ne 0) { throw "git diff --cached failed." }
+if ($LASTEXITCODE -ne 0) { throw "git diff --cached --stat failed." }
 
-Write-Host "`n[6/7] Commit"
-git -C "$RepoPath" commit -m "$CommitMessage"
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "No commit created. There may be no staged changes."
-    exit $LASTEXITCODE
+Write-Host "`n[5/8] Check whether staged changes exist"
+git -C "$RepoPath" diff --cached --quiet
+$DiffExitCode = $LASTEXITCODE
+
+if ($DiffExitCode -eq 0) {
+    Write-Host "No staged changes. Nothing to commit or push."
+    git -C "$RepoPath" status
+    exit 0
 }
 
-Write-Host "`n[7/7] Push"
+if ($DiffExitCode -ne 1) {
+    throw "Unable to determine whether staged changes exist."
+}
+
+Write-Host "`n[6/8] Commit"
+git -C "$RepoPath" commit -m "$CommitMessage"
+if ($LASTEXITCODE -ne 0) { throw "git commit failed." }
+
+Write-Host "`n[7/8] Push origin main"
 git -C "$RepoPath" push origin main
 if ($LASTEXITCODE -ne 0) { throw "git push failed." }
 
-Write-Host "`n[Final] Git status"
+Write-Host "`n[8/8] Final status"
 git -C "$RepoPath" status
 if ($LASTEXITCODE -ne 0) { throw "Final git status failed." }
 

@@ -35,13 +35,15 @@ Do you want to proceed?
 claude-auto-approve/
 ├─ README.md
 ├─ settings.json
+├─ .gitignore
 └─ git_commit_push.ps1
 ```
 
 | 檔案 | 用途 |
 |---|---|
 | `settings.json` | Claude Code 全域權限設定範本 |
-| `git_commit_push.ps1` | 自動檢查、提交並推送本專案 |
+| `.gitignore` | 排除 `.claude/` 與本機專用設定 |
+| `git_commit_push.ps1` | 從腳本所在目錄自動檢查、提交並推送本專案 |
 | `README.md` | 安裝、使用與安全說明 |
 
 ## 安裝方式
@@ -238,7 +240,7 @@ Copy-Item -Force ".\settings.json" "C:\Users\Rossi\.claude\settings.json"
 powershell -ExecutionPolicy Bypass -File ".\git_commit_push.ps1"
 ```
 
-腳本會依序執行：
+腳本使用 `$PSScriptRoot` 自動識別 Repository，不綁定特定電腦路徑，並依序執行：
 
 ```text
 git status
