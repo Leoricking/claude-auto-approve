@@ -15,6 +15,7 @@ Do you want to proceed?
 
 - 自動允許讀取、搜尋、編輯與寫入檔案
 - 自動允許 Python、pytest、Git 與常用 Shell 指令
+- 支援多行 `python -c`、引號內換行與註解等特殊 Bash 命令
 - 自動接受 Claude Code 的檔案修改
 - 可套用至單一專案或所有專案
 - 明確封鎖高風險與破壞性指令
@@ -129,15 +130,61 @@ Claude Code 通常會依照下列層級套用設定：
       "Edit",
       "Write",
       "NotebookEdit",
+      "WebSearch",
+      "WebFetch",
+      "Bash",
       "Bash(python:*)",
       "Bash(pytest:*)",
-      "Bash(git:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
       "Bash(ls:*)",
       "Bash(grep:*)"
     ]
   }
 }
 ```
+
+### 為什麼需要完整 `Bash` 權限
+
+Claude Code 對某些多行命令會額外觸發路徑安全檢查，例如：
+
+```text
+Newline followed by # inside a quoted argument can hide
+arguments from path validation
+```
+
+常見觸發情況包含：
+
+```powershell
+python -c "
+# comment
+print('test')
+"
+```
+
+即使已設定：
+
+```json
+"Bash(python:*)"
+```
+
+這類帶有引號內換行、`#` 註解或複雜轉義的命令，仍可能停在：
+
+```text
+Do you want to proceed?
+1. Yes
+2. No
+```
+
+因此目前的公開設定額外加入：
+
+```json
+"Bash"
+```
+
+這代表允許 Claude Code 使用完整 Bash 工具，可避免上述命令在開發過程中卡住。現有 `deny` 規則仍用來阻擋已列出的高風險命令。
+
+> `Bash` 的允許範圍很廣，只應在你信任的本機專案與程式碼中使用。
 
 ### 危險指令封鎖
 
@@ -174,6 +221,7 @@ Claude Code 通常會依照下列層級套用設定：
 
 5. 確認全域或專案設定已載入。
 6. 執行 Python、pytest、Git status 或檔案搜尋操作，確認不再反覆要求權限。
+7. 測試多行 `python -c` 命令，確認不再出現 path validation 詢問。
 
 ## 能解決的等待情況
 
@@ -205,7 +253,7 @@ wc
 
 請注意：
 
-- `Bash(git:*)` 允許範圍很廣
+- `Bash` 允許 Claude Code 執行所有未被 `deny` 攔截的 Shell 命令
 - `Bash(python:*)` 可執行任何本機 Python 程式
 - 只應用於你信任的程式碼與專案
 - 不要在來源不明的 Repository 直接使用寬鬆設定

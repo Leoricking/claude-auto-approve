@@ -10,6 +10,7 @@
       "NotebookEdit",
       "WebSearch",
       "WebFetch",
+      "Bash",
       "Bash(python:*)",
       "Bash(py:*)",
       "Bash(python3:*)",
